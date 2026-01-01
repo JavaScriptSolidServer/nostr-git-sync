@@ -1,7 +1,12 @@
-import { getHexPubkey } from './config.js'
+import { verifyEvent as verifySignature } from 'nostr-tools/pure'
 
 export function verifyEvent(event, repo) {
-  // Check pubkey is in trusted list (all hex)
+  // 1. Verify cryptographic signature
+  if (!verifySignature(event)) {
+    return { ok: false, reason: 'invalid signature' }
+  }
+
+  // 2. Check pubkey is in trusted list (all hex)
   const eventPubkey = event.pubkey
 
   for (const trusted of repo.trusted) {
