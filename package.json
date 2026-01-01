@@ -1,6 +1,6 @@
 {
   "name": "nostr-git-sync",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Decentralized git sync daemon using Nostr (NIP-34)",
   "type": "module",
   "main": "src/daemon.js",
