@@ -1,0 +1,19 @@
+{
+  "relays": [
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.nostr.band"
+  ],
+  "repos": {
+    "JavaScriptSolidServer": {
+      "path": "/var/www/jss",
+      "cloneUrl": "https://github.com/JavaScriptSolidServer/JavaScriptSolidServer.git",
+      "branch": "gh-pages",
+      "trusted": [
+        "did:nostr:npub1..."
+      ],
+      "requireAnchor": false,
+      "postSync": "npm install && npm run build"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "nostr-git-sync",
+  "version": "0.0.1",
+  "description": "Decentralized git sync daemon using Nostr (NIP-34)",
+  "type": "module",
+  "main": "src/daemon.js",
+  "bin": {
+    "nostr-git-sync": "./bin/nostr-git-sync.js"
+  },
+  "scripts": {
+    "start": "node bin/nostr-git-sync.js",
+    "dev": "node --watch bin/nostr-git-sync.js"
+  },
+  "dependencies": {
+    "nostr-tools": "^2.19.4",
+    "websocket-polyfill": "^0.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "nostr",
+    "git",
+    "sync",
+    "decentralized",
+    "nip-34"
+  ],
+  "license": "MIT"
+}
