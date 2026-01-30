@@ -33,11 +33,11 @@ function connectToRelay(url, index, repoIds, config, sockets) {
     console.log(`[daemon] Connected to ${url}`)
     sockets.push(ws)
 
-    // Subscribe to 30618 events for our repos
+    // Subscribe to 30617 (repo announcement) and 30618 (repo state) events
     const subscription = JSON.stringify([
       'REQ',
       `git-sync-${index}`,
-      { kinds: [30618], '#d': repoIds }
+      { kinds: [30617, 30618], '#d': repoIds }
     ])
     ws.send(subscription)
   })
@@ -82,9 +82,34 @@ async function handleEvent(event, config) {
   const repo = config.repos[repoId]
   if (!repo) return
 
-  console.log(`\n[event] Received 30618 for ${repoId}`)
+  const kind = event.kind
+  console.log(`\n[event] Received ${kind} for ${repoId}`)
   console.log(`[event] From: ${event.pubkey.slice(0, 16)}...`)
 
+  // Verify pubkey is trusted
+  const verification = verifyEvent(event, repo)
+  if (!verification.ok) {
+    console.log(`[event] ✗ Rejected: ${verification.reason}`)
+    return
+  }
+  console.log('[event] ✓ Trusted publisher')
+
+  // Handle 30617 (repo announcement) - simpler, just trigger sync
+  if (kind === 30617) {
+    console.log('[event] Repository announcement, triggering sync')
+
+    // Extract clone URL from event if present
+    const cloneTag = event.tags.find(t => t[0] === 'clone')
+    const cloneUrl = cloneTag ? cloneTag[1] : repo.cloneUrl
+
+    const synced = gitSync(repo.path, null, cloneUrl)
+    if (synced && repo.postSync) {
+      await runPostSync(repo.path, repo.postSync)
+    }
+    return
+  }
+
+  // Handle 30618 (repo state) - detailed with commit info
   // Find branch ref
   const refTag = event.tags.find(t => t[0].startsWith('refs/heads/'))
   if (!refTag) {
@@ -102,14 +127,6 @@ async function handleEvent(event, config) {
     console.log(`[event] Not tracking branch ${branch}, skipping`)
     return
   }
-
-  // Verify pubkey is trusted
-  const verification = verifyEvent(event, repo)
-  if (!verification.ok) {
-    console.log(`[event] ✗ Rejected: ${verification.reason}`)
-    return
-  }
-  console.log('[event] ✓ Trusted publisher')
 
   // Optional: verify Blocktrails anchor
   if (repo.requireAnchor) {

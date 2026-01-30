@@ -11,7 +11,11 @@ Decentralized git sync daemon using Nostr (NIP-34).
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
-When a publisher pushes to a repo, they broadcast a NIP-34 `kind:30618` event announcing the new state. Subscribers watching for that repo automatically pull the update.
+When a publisher pushes to a repo, they broadcast a NIP-34 event announcing the update. Subscribers watching for that repo automatically pull.
+
+Supports both event kinds:
+- **30617** (repo announcement): Simple "repo was updated" trigger → `git pull`
+- **30618** (repo state): Specific commit hash → `git checkout <commit>`
 
 ## Key Features
 
@@ -79,7 +83,25 @@ node src/publish.js nsec1... JavaScriptSolidServer .
 
 ## NIP-34 Event Structure
 
-### Kind 30618: Repository State
+### Kind 30617: Repository Announcement (Simple)
+
+```json
+{
+  "kind": 30617,
+  "pubkey": "<publisher-hex>",
+  "tags": [
+    ["d", "JavaScriptSolidServer"],
+    ["clone", "https://github.com/..."],
+    ["web", "https://jss.example.com"],
+    ["name", "JavaScript Solid Server"]
+  ],
+  "content": "Optional description"
+}
+```
+
+Use 30617 for simple "repo was updated" notifications. The daemon will `git pull` when received.
+
+### Kind 30618: Repository State (Detailed)
 
 ```json
 {
@@ -93,6 +115,8 @@ node src/publish.js nsec1... JavaScriptSolidServer .
 }
 ```
 
+Use 30618 for precise commit tracking. The daemon will `git checkout <commit>` when received.
+
 ## Identity Model
 
 The same secp256k1 keypair is used across:
@@ -103,7 +127,8 @@ The same secp256k1 keypair is used across:
 
 ## Roadmap
 
-- [ ] 30617 discovery (fetch clone URLs from Nostr)
+- [x] 30617 support (simple repo announcement trigger)
+- [ ] 30617 discovery (auto-clone from Nostr)
 - [ ] Blocktrails anchor verification
 - [ ] Git hook for auto-publish
 - [ ] Systemd service file
