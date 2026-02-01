@@ -118,6 +118,9 @@ function startDashboardServer(port, configDir, config) {
     } else if (req.url.startsWith('/add/') && req.method === 'POST') {
       const repoId = decodeURIComponent(req.url.replace('/add/', ''))
       await handleAddRepo(repoId, configDir, configPath, res)
+    } else if (req.url.startsWith('/delete/') && req.method === 'POST') {
+      const repoId = decodeURIComponent(req.url.replace('/delete/', ''))
+      await handleDeleteRepo(repoId, configDir, configPath, res)
     } else {
       res.statusCode = 404
       res.end('Not Found')
@@ -187,6 +190,31 @@ async function handleAddRepo(dedupKey, configDir, configPath, res) {
 
   console.log(`[add] Added ${repoId} to config`)
   res.end(JSON.stringify({ ok: true, path: repoPath }))
+}
+
+async function handleDeleteRepo(repoId, configDir, configPath, res) {
+  res.setHeader('Content-Type', 'application/json')
+
+  if (!currentConfig.repos[repoId]) {
+    res.statusCode = 404
+    res.end(JSON.stringify({ ok: false, error: 'Repo not found' }))
+    return
+  }
+
+  // Read current config
+  const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+
+  // Remove repo
+  delete configData.repos[repoId]
+  delete currentConfig.repos[repoId]
+  delete status.repos[repoId]
+
+  // Write config
+  fs.writeFileSync(configPath, JSON.stringify(configData, null, 2))
+  updateStatus(configDir)
+
+  console.log(`[delete] Removed ${repoId} from config`)
+  res.end(JSON.stringify({ ok: true }))
 }
 
 function handleDiscoveredEvent(event, config, configDir) {

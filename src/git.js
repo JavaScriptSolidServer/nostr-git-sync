@@ -1,11 +1,29 @@
 import { execSync, exec } from 'child_process'
-import { existsSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
+import { dirname } from 'path'
 
 export function gitSync(repoPath, commit, cloneUrl) {
-  // Only update existing repos for now
+  // Auto-clone if repo doesn't exist but we have a cloneUrl
   if (!existsSync(repoPath)) {
-    console.error(`[git] ✗ Repo doesn't exist: ${repoPath}`)
-    return false
+    if (!cloneUrl) {
+      console.error(`[git] ✗ Repo doesn't exist and no cloneUrl: ${repoPath}`)
+      return false
+    }
+
+    console.log(`[git] Auto-cloning ${cloneUrl} to ${repoPath}`)
+    try {
+      // Create parent directory if needed
+      mkdirSync(dirname(repoPath), { recursive: true })
+
+      execSync(`git clone ${cloneUrl} ${repoPath}`, {
+        stdio: 'pipe'
+      })
+      console.log(`[git] ✓ Cloned successfully`)
+      return true
+    } catch (err) {
+      console.error(`[git] ✗ Clone failed:`, err.message)
+      return false
+    }
   }
 
   // If no commit specified (30617 event), just pull latest

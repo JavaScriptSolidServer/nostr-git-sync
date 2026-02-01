@@ -97,6 +97,8 @@
     .no-events { padding: 16px; color: #656d76; }
     .btn-add { background: #dafbe1; border-color: #1a7f37; color: #1a7f37; }
     .btn-add:hover { background: #aceebb; }
+    .btn-del { background: #ffebe9; border-color: #cf222e; color: #cf222e; margin-left: 4px; }
+    .btn-del:hover { background: #ffcecb; }
     .repo-desc { font-size: 12px; color: #656d76; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .discovered-empty { color: #656d76; padding: 16px; }
   </style>
@@ -171,6 +173,7 @@
               <button class="btn sync-btn" onclick="syncRepo('${id}')" ${repo.status === 'syncing' ? 'disabled' : ''}>
                 ${repo.status === 'syncing' ? 'Syncing...' : 'Sync'}
               </button>
+              <button class="btn btn-del" onclick="deleteRepo('${id}')">×</button>
               <span class="status ${repo.status || 'watching'}">${repo.status || 'watching'}</span>
             </div>
           </div>
@@ -269,6 +272,21 @@
         fetchStatus();
       } catch (err) {
         alert('Sync failed: ' + err.message);
+        fetchStatus();
+      }
+    }
+
+    async function deleteRepo(repoId) {
+      if (!confirm(`Remove "${repoId}" from sync config?`)) return;
+      try {
+        const res = await fetch('delete/' + encodeURIComponent(repoId), { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) {
+          alert('Failed to delete: ' + (data.error || 'Unknown error'));
+        }
+        fetchStatus();
+      } catch (err) {
+        alert('Failed to delete: ' + err.message);
         fetchStatus();
       }
     }
