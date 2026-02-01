@@ -286,7 +286,13 @@ async function handleManualSync(repoId, configDir, res) {
 
   try {
     const synced = gitSync(repo.path, null, repo.cloneUrl)
-    if (synced) {
+    if (synced === 'skipped') {
+      if (status.repos[repoId]) {
+        status.repos[repoId].status = 'synced'
+        updateStatus(configDir)
+      }
+      res.end(JSON.stringify({ ok: true, skipped: true }))
+    } else if (synced) {
       if (status.repos[repoId]) {
         status.repos[repoId].lastSync = new Date().toISOString()
         status.repos[repoId].syncCount++
@@ -457,13 +463,15 @@ async function handleEvent(event, config, configDir) {
 
   // Handle 30617 (repo announcement) - simpler, just trigger sync
   if (kind === 30617) {
-    console.log('[event] Repository announcement, triggering sync')
-
     // Extract clone URL from event if present
     const cloneTag = event.tags.find(t => t[0] === 'clone')
     const cloneUrl = cloneTag ? cloneTag[1] : repo.cloneUrl
 
     const synced = gitSync(repo.path, null, cloneUrl)
+    if (synced === 'skipped') {
+      // Already up to date, don't update stats
+      return
+    }
     if (synced) {
       if (status.repos[repoId]) {
         status.repos[repoId].lastSync = new Date().toISOString()
